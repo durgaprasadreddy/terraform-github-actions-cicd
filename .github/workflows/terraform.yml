@@ -26,30 +26,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Terraform Init
-        uses: hashicorp/terraform-github-actions@master
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          tf_actions_version: 0.14.3
-          tf_actions_subcommand: init
-          tf_actions_working_dir: '.'
-          tf_actions_comment: true
-          args: '-var="instance_type=t2.medium"'
+          terraform_version: 1.5.7   # pick a stable version you want
+
+      - name: Terraform Init
+        run: terraform init -input=false -var="instance_type=t2.medium"
 
       - name: Terraform Plan
-        uses: hashicorp/terraform-github-actions@master
-        with:
-          tf_actions_version: 0.14.3
-          tf_actions_subcommand: plan
-          tf_actions_working_dir: '.'
-          tf_actions_comment: true
-          args: '-var="instance_type=t2.medium"'
+        run: terraform plan -input=false -var="instance_type=t2.medium"
 
       - name: Terraform Apply/Destroy
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: hashicorp/terraform-github-actions@master
-        with:
-          tf_actions_version: 0.14.3
-          tf_actions_subcommand: ${{ github.event.inputs.terraform_action }}
-          tf_actions_working_dir: '.'
-          tf_actions_comment: true
-          args: '-auto-approve -var="instance_type=t2.medium"'
+        run: terraform ${{ github.event.inputs.terraform_action }} -auto-approve -var="instance_type=t2.medium"
