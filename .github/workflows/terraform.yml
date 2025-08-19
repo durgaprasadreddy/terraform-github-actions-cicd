@@ -1,15 +1,17 @@
 name: Terraform CI/CD
 
 on:
+  # Manual trigger with dropdown
   workflow_dispatch:
     inputs:
       terraform_action:
+        description: 'Select Terraform action'
+        required: true
         type: choice
-        description: Select Terraform action
         options:
           - apply
           - destroy
-        required: true
+  # Auto-run on push to main
   push:
     branches: [ "main" ]
 
@@ -29,7 +31,7 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      # For push to main → init, plan, apply
+      # ---- PUSH: init + plan + apply ----
       - name: Terraform Init & Plan (on push)
         if: ${{ github.event_name == 'push' }}
         run: |
@@ -40,7 +42,7 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: terraform apply -auto-approve -var="instance_type=t2.medium"
 
-      # For manual trigger → init + chosen action (apply/destroy)
+      # ---- MANUAL: init + chosen action ----
       - name: Terraform Init (on manual trigger)
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: terraform init -input=false -var="instance_type=t2.medium"
