@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       terraform_action:
-        description: 'Terraform action to run'
+        description: 'Select Terraform action'
         required: true
         type: choice
         options:
@@ -30,6 +30,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform init -input=false -var="instance_type=t2.medium"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -var="instance_type=t2.medium"
 
       - name: Terraform Apply
         if: ${{ github.event.inputs.terraform_action == 'apply' }}
