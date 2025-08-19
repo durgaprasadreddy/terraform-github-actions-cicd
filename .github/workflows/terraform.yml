@@ -4,17 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       terraform_action:
-        description: 'Select Terraform action'
-        required: true
         type: choice
+        description: Select Terraform action
         options:
           - apply
           - destroy
+        required: true
+  push:
+    branches: [ "main" ]
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    environment: production
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEVOPS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEVOPS_SECRET_ACCESS_KEY }}
@@ -28,16 +29,22 @@ jobs:
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init
-        run: terraform init -input=false -var="instance_type=t2.medium"
+      # For push to main → init, plan, apply
+      - name: Terraform Init & Plan (on push)
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          terraform init -input=false -var="instance_type=t2.medium"
+          terraform plan -input=false -var="instance_type=t2.medium"
 
-      - name: Terraform Plan
-        run: terraform plan -input=false -var="instance_type=t2.medium"
-
-      - name: Terraform Apply
-        if: ${{ github.event.inputs.terraform_action == 'apply' }}
+      - name: Terraform Apply (on push)
+        if: ${{ github.event_name == 'push' }}
         run: terraform apply -auto-approve -var="instance_type=t2.medium"
 
-      - name: Terraform Destroy
-        if: ${{ github.event.inputs.terraform_action == 'destroy' }}
-        run: terraform destroy -auto-approve -var="instance_type=t2.medium"
+      # For manual trigger → init + chosen action (apply/destroy)
+      - name: Terraform Init (on manual trigger)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: terraform init -input=false -var="instance_type=t2.medium"
+
+      - name: Terraform Apply/Destroy (on manual trigger)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: terraform ${{ github.event.inputs.terraform_action }} -auto-approve -var="instance_type=t2.medium"
